@@ -1,0 +1,14 @@
+version: '3'
+services: 
+  server-one:
+    build: ./server-one
+    ports:
+      - "9000:6000"
+  server-two:
+    build: ./server-two
+    ports:
+      - "10000:7000"
+  server-three:
+    build: ./server-three
+    ports:
+      - "11000:8000"
