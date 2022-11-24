@@ -1,11 +1,6 @@
 from flask import Flask, request
-import threading
-
-import json
-import random
-import time
 import requests
-
+from pythonping import ping 
 
 # from ..extensions import ip_config
 # from ..extensions import crud
@@ -18,58 +13,78 @@ app = Flask(__name__)
 memory_datastore = {"msg": "hello"}
 key_value_dict = {} 
 
-partion_leader = True
+
+partition_leader = True
 
 def sendData(command, key="none", value='none'):
-    # key = response['key']
-    # value = response['value']
-    
-    # command = input(str("Choose the command: read, create, update, delete\n"))
-    if command == "read":
-      # key = input(str("enter filename "))
-      crud.CRUD.read(memory_datastore, key)
+  global memory_datastore
 
-    elif command == "create":
-      # key = input(str("enter filename "))
-      # value = input(str("enter file content "))
-      crud.CRUD.create(memory_datastore, key, value)
+  if command == "read":
+    crud.CRUD.read(memory_datastore, key)
+  elif command == "create":
+    crud.CRUD.create(memory_datastore, key, value)
+  elif command == "update":
+    crud.CRUD.update(memory_datastore, key, value)
+  elif command == "delete":
+    crud.CRUD.delete(memory_datastore, key)
 
-    elif command == "update":
-      # key = input(str("enter filename "))
-      # value = input(str("enter new file content "))
-      crud.CRUD.update(memory_datastore, key, value)
+  data_amount = len(memory_datastore)
 
-    elif command == "delete":
-      # key = input(str("enter filename "))
-      crud.CRUD.delete(memory_datastore, key)
+  bound = data_amount // 2 
 
-    payload = memory_datastore
-    print(payload, "PAYLOAD")
-    post = requests.post("http://"+ ip_config.current_ip + ":10000/s2/read", json = payload)
-    print(payload, "data has been sended to server_2")
-    post = requests.post("http://"+ ip_config.current_ip + ":11000/s3/read", json = payload)
-    print(payload, "data has been sended to server_3")
-    
-    if command == "read":
-      return(memory_datastore.get(key))
-    elif command == "create":
-      return "data has been added"
-    elif command == "update":
-      return "data has been updated"
-    elif command == "delete":
-      return "data has been deleted"
-    elif command == "readAll":
-      return memory_datastore
+  first_part_data  = {}
+  second_part_data = {}
+  
+  count = 0
+
+  for _key, _value in memory_datastore.items():
+    if data_amount == 1:
+      first_part_data = memory_datastore
+      second_part_data = memory_datastore
+    elif count < bound:
+      first_part_data[_key] = _value
+    else:
+      second_part_data[_key] = _value
+    count += 1
+
+  post = requests.post("http://"+ ip_config.current_ip + ":10000/s2", json = first_part_data)
+  print(first_part_data, "data has been sended to server_2")
+  post = requests.post("http://"+ ip_config.current_ip + ":11000/s3", json = second_part_data)
+  print(second_part_data, "data has been sended to server_3")
+  
+  if command == "read":
+    return(memory_datastore.get(key))
+  elif command == "create":
+    return "data has been added"
+  elif command == "update":
+    return "data has been updated"
+  elif command == "delete":
+    return "data has been deleted"
+  elif command == "readAll":
+    return memory_datastore
+  elif command == "read2":
+    return first_part_data
+  elif command == "read3":
+    return second_part_data
+
+
+@app.route('/s1/', methods=['POST'])
+def receive():
+  global memory_datastore
+ 
+  return memory_datastore
 
 @app.route('/s1/<Command>', methods=['GET'])
 def send(Command):   
+  global memory_datastore
+
   res = request.get_json() 
   
   key_value_dict = {}
   key_value_dict.update(res)
 
   
-  if partion_leader:
+  if partition_leader:
 
     for _key in key_value_dict:
       if _key == "key":
@@ -83,6 +98,8 @@ def send(Command):
       return(sendData(Command, key, value))
     elif len(key_value_dict) == 0:
       return(sendData(Command))
+  else:
+     memory_datastore = res
 
   return memory_datastore
 
@@ -91,18 +108,5 @@ def get_data():
 
     
 if __name__ == '__main__':
-    app.run(debug=False, host="0.0.0.0", port=6000, use_reloader=False)
+  app.run(debug=False, host="0.0.0.0", port=6000, use_reloader=False)
     
-    # flask_thread = threading.Thread(target=lambda: app.run(debug=False, host="0.0.0.0", port=5000, use_reloader=False))
-
-    # threads = list()
-    # threads.append(flask_thread)
-    # for index in range(6):
-    #     print("Main    : create and start thread.", index)
-    #     x = threading.Thread(target=sendData, args=())
-    #     threads.append(x)
-
-    # for index, thread in enumerate(threads):
-    #     print("Main    : before joining thread.", index)
-    #     thread.start()
-    #     print("Main    : thread done", index)

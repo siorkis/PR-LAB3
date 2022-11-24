@@ -1,11 +1,5 @@
 class CRUD:
   
-#   thisdict = {
-#   "brand": "Ford",
-#   "model": "Mustang",
-#   "year": 1964
-# }
-
   @staticmethod
   def create(data_set, key, value):
     data_set[key] = value
