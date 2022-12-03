@@ -85,6 +85,17 @@ def answer(Command):
   return memory_datastore
 
 
+# sync route
+@app.route('/s2-sync', methods=['GET', 'POST'])
+def sync_answer():   
+  global memory_datastore
+
+  payload = memory_datastore
+  post = requests.post("http://"+ ip_config.current_ip + ":9000/s1-sync", json = payload)
+  
+  return memory_datastore
+
+
 @app.route('/s2/<Command>', methods=['GET'])
 def send(Command):   
   global memory_datastore
@@ -114,12 +125,10 @@ def send(Command):
       return(sendData(Command))
   
 
-  
-
 def get_data(response):
   memory_datastore = response
   print(memory_datastore)
     
 if __name__ == '__main__':
   app.run(debug=False, host="0.0.0.0", port=7000, use_reloader=False)
-  ping("http://"+ ip_config.current_ip + ":9000/s1", verbose=True, interval=5)
+ 

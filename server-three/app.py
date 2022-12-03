@@ -47,6 +47,19 @@ def receive():
  
   return memory_datastore
 
+
+# sync route
+@app.route('/s3-sync', methods=['GET', 'POST'])
+def answer():   
+  global memory_datastore
+
+  payload = memory_datastore
+  post = requests.post("http://"+ ip_config.current_ip + ":9000/s1-sync", json = payload)
+  
+  return memory_datastore
+
+
+
 @app.route('/s3-reserve/<Command>', methods=['GET', 'POST'])
 def send_back(Command):
   global memory_datastore

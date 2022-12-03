@@ -12,3 +12,11 @@ services:
     build: ./server-three
     ports:
       - "11000:8000"
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - server-one
+    ports:
+      - 13000:13000
